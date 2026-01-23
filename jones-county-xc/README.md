@@ -105,3 +105,4 @@ After pointing your domain to the server:
 ```bash
 ./deploy/setup-ssl.sh your-domain.com
 ```
+
