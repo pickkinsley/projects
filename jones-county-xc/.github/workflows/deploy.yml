@@ -1,0 +1,62 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'jones-county-xc/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build frontend
+        working-directory: jones-county-xc/frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build backend
+        working-directory: jones-county-xc/backend
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o server main.go
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail.pem
+          chmod 600 ~/.ssh/lightsail.pem
+          ssh-keyscan -H ${{ secrets.LIGHTSAIL_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy frontend
+        run: |
+          scp -i ~/.ssh/lightsail.pem -r jones-county-xc/frontend/dist/* ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:/var/www/jonescountyxc/
+
+      - name: Deploy backend
+        run: |
+          scp -i ~/.ssh/lightsail.pem jones-county-xc/backend/server ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:~/backend/
+
+      - name: Restart backend service
+        run: |
+          ssh -i ~/.ssh/lightsail.pem ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "sudo systemctl restart jonescountyxc"
+
+      - name: Verify deployment
+        run: |
+          sleep 3
+          curl -f http://${{ secrets.LIGHTSAIL_HOST }}/api/health || exit 1
+          echo "Deployment successful!"
