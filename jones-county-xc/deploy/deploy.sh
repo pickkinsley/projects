@@ -6,8 +6,8 @@ set -e
 
 # Configuration - UPDATE THESE
 SERVER_USER="ubuntu"
-SERVER_IP="YOUR_SERVER_IP"
-SSH_KEY="~/.ssh/your-key.pem"
+SERVER_IP="44.215.111.88"
+SSH_KEY="~/.ssh/lightsail.pem"
 
 # Paths
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
