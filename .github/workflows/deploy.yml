@@ -40,12 +40,11 @@ jobs:
       - name: Set up SSH
         env:
           SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          SSH_HOST: ${{ secrets.LIGHTSAIL_HOST }}
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/lightsail.pem
           chmod 600 ~/.ssh/lightsail.pem
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          echo "StrictHostKeyChecking no" > ~/.ssh/config
 
       - name: Deploy frontend
         run: |
