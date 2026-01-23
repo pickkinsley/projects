@@ -52,6 +52,7 @@ jobs:
 
       - name: Deploy backend
         run: |
+          ssh -i ~/.ssh/lightsail.pem ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "rm -f ~/backend/server"
           scp -i ~/.ssh/lightsail.pem jones-county-xc/backend/server ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:~/backend/
 
       - name: Restart backend service
