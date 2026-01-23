@@ -39,10 +39,10 @@ jobs:
 
       - name: Set up SSH
         env:
-          SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          SSH_KEY_BASE64: ${{ secrets.LIGHTSAIL_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/lightsail.pem
+          echo "$SSH_KEY_BASE64" | base64 -d > ~/.ssh/lightsail.pem
           chmod 600 ~/.ssh/lightsail.pem
           echo "StrictHostKeyChecking no" > ~/.ssh/config
 
