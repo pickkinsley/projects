@@ -6,7 +6,7 @@ set -e
 
 # Configuration - UPDATE THESE
 SERVER_USER="ubuntu"
-SERVER_IP="44.215.111.88"
+SERVER_IP="44.219.227.2"
 SSH_KEY="~/.ssh/lightsail.pem"
 
 # Paths
