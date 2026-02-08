@@ -18,10 +18,11 @@ type Athlete struct {
 }
 
 type Meet struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Date     string `json:"date"`
-	Location string `json:"location"`
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Date        string `json:"date"`
+	Location    string `json:"location"`
+	Description string `json:"description"`
 }
 
 type Result struct {
@@ -111,7 +112,7 @@ func main() {
 
 	// Meets endpoint
 	http.HandleFunc("/api/meets", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, name, date, COALESCE(location, '') FROM meets")
+		rows, err := db.Query("SELECT id, name, date, COALESCE(location, ''), COALESCE(description, '') FROM meets")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -121,7 +122,7 @@ func main() {
 		meets := []Meet{}
 		for rows.Next() {
 			var m Meet
-			if err := rows.Scan(&m.ID, &m.Name, &m.Date, &m.Location); err != nil {
+			if err := rows.Scan(&m.ID, &m.Name, &m.Date, &m.Location, &m.Description); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
