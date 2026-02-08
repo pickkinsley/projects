@@ -30,7 +30,7 @@ func main() {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte("<h1>Jones County XC API</h1><p>Endpoints:</p><ul><li><a href='/api/health'>/api/health</a></li><li><a href='/api/hello'>/api/hello</a></li></ul>"))
+		w.Write([]byte("<h1>Jones County XC API</h1><p>Endpoints:</p><ul><li><a href='/api/health'>/api/health</a></li><li><a href='/api/hello'>/api/hello</a></li><li><a href='/api/athletes'>/api/athletes</a></li></ul>"))
 	})
 
 	// Health check endpoint
@@ -47,6 +47,27 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{
 			"message": "Hello from Jones County XC backend!",
 		})
+	}))
+
+	// Athletes endpoint
+	http.HandleFunc("/api/athletes", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		type Athlete struct {
+			ID             int    `json:"id"`
+			Name           string `json:"name"`
+			Grade          int    `json:"grade"`
+			PersonalRecord string `json:"personalRecord"`
+		}
+
+		athletes := []Athlete{
+			{ID: 1, Name: "Jake Thompson", Grade: 11, PersonalRecord: "16:42"},
+			{ID: 2, Name: "Marcus Rivera", Grade: 12, PersonalRecord: "16:15"},
+			{ID: 3, Name: "Ethan Williams", Grade: 10, PersonalRecord: "17:30"},
+			{ID: 4, Name: "Noah Carter", Grade: 9, PersonalRecord: "18:05"},
+			{ID: 5, Name: "Liam Johnson", Grade: 11, PersonalRecord: "17:12"},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(athletes)
 	}))
 
 	log.Println("Backend server starting on http://localhost:8080")
