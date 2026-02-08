@@ -89,7 +89,7 @@ func main() {
 
 	// Athletes endpoint
 	http.HandleFunc("/api/athletes", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, name, grade, COALESCE(personal_record, ''), COALESCE(events, '') FROM athletes")
+		rows, err := db.Query("SELECT id, name, grade, COALESCE(personal_record, ''), COALESCE(events, '') FROM athletes ORDER BY grade")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -154,6 +154,108 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
+	}))
+
+	// Top 5 fastest personal records
+	http.HandleFunc("/api/athletes/fastest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		rows, err := db.Query("SELECT id, name, grade, COALESCE(personal_record, ''), COALESCE(events, '') FROM athletes ORDER BY personal_record LIMIT 5")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		athletes := []Athlete{}
+		for rows.Next() {
+			var a Athlete
+			if err := rows.Scan(&a.ID, &a.Name, &a.Grade, &a.PersonalRecord, &a.Events); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			athletes = append(athletes, a)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(athletes)
+	}))
+
+	// Results for the most recent meet
+	http.HandleFunc("/api/results/latest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		type LatestResult struct {
+			AthleteName string `json:"athleteName"`
+			MeetName    string `json:"meetName"`
+			Time        string `json:"time"`
+			Place       int    `json:"place"`
+		}
+
+		rows, err := db.Query(`
+			SELECT a.name, m.name, r.time, r.place
+			FROM results r
+			JOIN athletes a ON r.athlete_id = a.id
+			JOIN meets m ON r.meet_id = m.id
+			WHERE m.date = (SELECT MAX(date) FROM meets)
+			ORDER BY r.place
+		`)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		results := []LatestResult{}
+		for rows.Next() {
+			var res LatestResult
+			if err := rows.Scan(&res.AthleteName, &res.MeetName, &res.Time, &res.Place); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			results = append(results, res)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(results)
+	}))
+
+	// Athlete's complete race history
+	http.HandleFunc("/api/athletes/history", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		athleteID := r.URL.Query().Get("id")
+		if athleteID == "" {
+			http.Error(w, "missing id query parameter", http.StatusBadRequest)
+			return
+		}
+
+		type RaceHistory struct {
+			MeetName string `json:"meetName"`
+			Date     string `json:"date"`
+			Time     string `json:"time"`
+			Place    int    `json:"place"`
+		}
+
+		rows, err := db.Query(`
+			SELECT m.name, m.date, r.time, r.place
+			FROM results r
+			JOIN meets m ON r.meet_id = m.id
+			WHERE r.athlete_id = ?
+			ORDER BY m.date
+		`, athleteID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		history := []RaceHistory{}
+		for rows.Next() {
+			var h RaceHistory
+			if err := rows.Scan(&h.MeetName, &h.Date, &h.Time, &h.Place); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			history = append(history, h)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(history)
 	}))
 
 	log.Println("Backend server starting on http://localhost:8080")
