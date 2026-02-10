@@ -21,3 +21,11 @@ ORDER BY place;
 -- name: CreateResult :execresult
 INSERT INTO results (athlete_id, meet_id, time, place)
 VALUES (?, ?, ?, ?);
+
+-- name: ListFastestTimes :many
+SELECT a.name AS athlete_name, m.name AS meet_name, r.time, r.place
+FROM results r
+JOIN athletes a ON r.athlete_id = a.id
+JOIN meets m ON r.meet_id = m.id
+ORDER BY r.time
+LIMIT 10;

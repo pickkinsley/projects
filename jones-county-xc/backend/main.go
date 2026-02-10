@@ -221,6 +221,35 @@ func main() {
 	http.HandleFunc("/api/results", resultsHandler)
 	http.HandleFunc("/api/results/", resultsHandler)
 
+	// Top 10 fastest times across all meets — using sqlc generated code
+	http.HandleFunc("/api/results/fastest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		type FastestTime struct {
+			AthleteName string `json:"athleteName"`
+			MeetName    string `json:"meetName"`
+			Time        string `json:"time"`
+			Place       int    `json:"place"`
+		}
+
+		rows, err := queries.ListFastestTimes(context.Background())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		times := make([]FastestTime, len(rows))
+		for i, row := range rows {
+			times[i] = FastestTime{
+				AthleteName: row.AthleteName,
+				MeetName:    row.MeetName,
+				Time:        row.Time,
+				Place:       int(row.Place),
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(times)
+	}))
+
 	// Top 5 fastest personal records — raw SQL (JOIN-style query)
 	http.HandleFunc("/api/athletes/fastest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT id, name, grade, COALESCE(personal_record, ''), COALESCE(events, '') FROM athletes ORDER BY personal_record LIMIT 5")

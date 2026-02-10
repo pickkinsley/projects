@@ -102,6 +102,50 @@ func (q *Queries) ListAthletes(ctx context.Context) ([]ListAthletesRow, error) {
 	return items, nil
 }
 
+const listFastestTimes = `-- name: ListFastestTimes :many
+SELECT a.name AS athlete_name, m.name AS meet_name, r.time, r.place
+FROM results r
+JOIN athletes a ON r.athlete_id = a.id
+JOIN meets m ON r.meet_id = m.id
+ORDER BY r.time
+LIMIT 10
+`
+
+type ListFastestTimesRow struct {
+	AthleteName string
+	MeetName    string
+	Time        string
+	Place       int32
+}
+
+func (q *Queries) ListFastestTimes(ctx context.Context) ([]ListFastestTimesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFastestTimes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFastestTimesRow
+	for rows.Next() {
+		var i ListFastestTimesRow
+		if err := rows.Scan(
+			&i.AthleteName,
+			&i.MeetName,
+			&i.Time,
+			&i.Place,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMeets = `-- name: ListMeets :many
 SELECT id, name, date, COALESCE(location, '') AS location, COALESCE(description, '') AS description
 FROM meets
