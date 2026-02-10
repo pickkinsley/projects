@@ -4,7 +4,7 @@ function AthleteList() {
   const { data: athletes, isLoading, error } = useQuery({
     queryKey: ['athletes'],
     queryFn: async () => {
-      const res = await fetch('http://localhost:8080/api/athletes')
+      const res = await fetch('/api/athletes')
       if (!res.ok) throw new Error('Failed to fetch athletes')
       return res.json()
     },
