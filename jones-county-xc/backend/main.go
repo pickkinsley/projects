@@ -94,7 +94,7 @@ func main() {
 	}))
 
 	// Athletes endpoint — using sqlc generated code
-	http.HandleFunc("/api/athletes", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	athletesHandler := corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		// Handle /api/athletes/{id} pattern
 		if rest := strings.TrimPrefix(r.URL.Path, "/api/athletes/"); rest != r.URL.Path {
 			id, err := strconv.ParseInt(rest, 10, 32)
@@ -141,7 +141,9 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(athletes)
-	}))
+	})
+	http.HandleFunc("/api/athletes", athletesHandler)
+	http.HandleFunc("/api/athletes/", athletesHandler)
 
 	// Meets endpoint — using sqlc generated code
 	http.HandleFunc("/api/meets", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +169,7 @@ func main() {
 	}))
 
 	// Results endpoint
-	http.HandleFunc("/api/results", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	resultsHandler := corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		// Handle /api/results/meet/{id} pattern
 		if rest := strings.TrimPrefix(r.URL.Path, "/api/results/meet/"); rest != r.URL.Path {
 			meetID, err := strconv.ParseInt(rest, 10, 32)
@@ -215,7 +217,9 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
-	}))
+	})
+	http.HandleFunc("/api/results", resultsHandler)
+	http.HandleFunc("/api/results/", resultsHandler)
 
 	// Top 5 fastest personal records — raw SQL (JOIN-style query)
 	http.HandleFunc("/api/athletes/fastest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
