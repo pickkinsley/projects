@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	dbsqlc "jones-county-xc/backend/db/sqlc"
 )
 
 type Athlete struct {
@@ -44,6 +48,8 @@ func main() {
 		log.Fatal("Failed to ping database:", err)
 	}
 	log.Println("Connected to MySQL database")
+
+	queries := dbsqlc.New(db)
 
 	// Enable CORS for frontend development
 	corsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
@@ -87,46 +93,73 @@ func main() {
 		})
 	}))
 
-	// Athletes endpoint
+	// Athletes endpoint — using sqlc generated code
 	http.HandleFunc("/api/athletes", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, name, grade, COALESCE(personal_record, ''), COALESCE(events, '') FROM athletes ORDER BY grade")
+		// Handle /api/athletes/{id} pattern
+		if rest := strings.TrimPrefix(r.URL.Path, "/api/athletes/"); rest != r.URL.Path {
+			id, err := strconv.ParseInt(rest, 10, 32)
+			if err != nil {
+				http.Error(w, "invalid athlete id", http.StatusBadRequest)
+				return
+			}
+			row, err := queries.GetAthleteByID(context.Background(), int32(id))
+			if err == sql.ErrNoRows {
+				http.Error(w, "athlete not found", http.StatusNotFound)
+				return
+			}
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(Athlete{
+				ID:             int(row.ID),
+				Name:           row.Name,
+				Grade:          int(row.Grade),
+				PersonalRecord: row.PersonalRecord,
+				Events:         row.Events,
+			})
+			return
+		}
+
+		rows, err := queries.ListAthletes(context.Background())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer rows.Close()
 
-		athletes := []Athlete{}
-		for rows.Next() {
-			var a Athlete
-			if err := rows.Scan(&a.ID, &a.Name, &a.Grade, &a.PersonalRecord, &a.Events); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+		athletes := make([]Athlete, len(rows))
+		for i, row := range rows {
+			athletes[i] = Athlete{
+				ID:             int(row.ID),
+				Name:           row.Name,
+				Grade:          int(row.Grade),
+				PersonalRecord: row.PersonalRecord,
+				Events:         row.Events,
 			}
-			athletes = append(athletes, a)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(athletes)
 	}))
 
-	// Meets endpoint
+	// Meets endpoint — using sqlc generated code
 	http.HandleFunc("/api/meets", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, name, date, COALESCE(location, ''), COALESCE(description, '') FROM meets")
+		rows, err := queries.ListMeets(context.Background())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer rows.Close()
 
-		meets := []Meet{}
-		for rows.Next() {
-			var m Meet
-			if err := rows.Scan(&m.ID, &m.Name, &m.Date, &m.Location, &m.Description); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+		meets := make([]Meet, len(rows))
+		for i, row := range rows {
+			meets[i] = Meet{
+				ID:          int(row.ID),
+				Name:        row.Name,
+				Date:        row.Date.Format("2006-01-02"),
+				Location:    row.Location,
+				Description: row.Description,
 			}
-			meets = append(meets, m)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -135,17 +168,45 @@ func main() {
 
 	// Results endpoint
 	http.HandleFunc("/api/results", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, athlete_id, meet_id, time, place FROM results")
+		// Handle /api/results/meet/{id} pattern
+		if rest := strings.TrimPrefix(r.URL.Path, "/api/results/meet/"); rest != r.URL.Path {
+			meetID, err := strconv.ParseInt(rest, 10, 32)
+			if err != nil {
+				http.Error(w, "invalid meet id", http.StatusBadRequest)
+				return
+			}
+			dbResults, err := queries.ListResultsByMeet(context.Background(), int32(meetID))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			results := make([]Result, len(dbResults))
+			for i, r := range dbResults {
+				results[i] = Result{
+					ID:        int(r.ID),
+					AthleteID: int(r.AthleteID),
+					MeetID:    int(r.MeetID),
+					Time:      r.Time,
+					Place:     int(r.Place),
+				}
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(results)
+			return
+		}
+
+		// Default: list all results
+		dbRows, err := db.Query("SELECT id, athlete_id, meet_id, time, place FROM results")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer rows.Close()
+		defer dbRows.Close()
 
 		results := []Result{}
-		for rows.Next() {
+		for dbRows.Next() {
 			var res Result
-			if err := rows.Scan(&res.ID, &res.AthleteID, &res.MeetID, &res.Time, &res.Place); err != nil {
+			if err := dbRows.Scan(&res.ID, &res.AthleteID, &res.MeetID, &res.Time, &res.Place); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -156,7 +217,7 @@ func main() {
 		json.NewEncoder(w).Encode(results)
 	}))
 
-	// Top 5 fastest personal records
+	// Top 5 fastest personal records — raw SQL (JOIN-style query)
 	http.HandleFunc("/api/athletes/fastest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT id, name, grade, COALESCE(personal_record, ''), COALESCE(events, '') FROM athletes ORDER BY personal_record LIMIT 5")
 		if err != nil {
@@ -179,7 +240,7 @@ func main() {
 		json.NewEncoder(w).Encode(athletes)
 	}))
 
-	// Results for the most recent meet
+	// Results for the most recent meet — kept as separate handler for clarity
 	http.HandleFunc("/api/results/latest", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		type LatestResult struct {
 			AthleteName string `json:"athleteName"`
@@ -216,7 +277,7 @@ func main() {
 		json.NewEncoder(w).Encode(results)
 	}))
 
-	// Athlete's complete race history
+	// Athlete's complete race history — raw SQL (JOIN query)
 	http.HandleFunc("/api/athletes/history", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		athleteID := r.URL.Query().Get("id")
 		if athleteID == "" {
