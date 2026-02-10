@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -38,7 +39,12 @@ type Result struct {
 }
 
 func main() {
-	db, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/jones_county_xc?parseTime=true")
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = "root@tcp(127.0.0.1:3306)/jones_county_xc?parseTime=true"
+	}
+
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
