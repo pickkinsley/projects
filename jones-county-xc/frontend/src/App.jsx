@@ -1,4 +1,5 @@
 import AthleteList from './AthleteList'
+import AthleteCard from './AthleteCard'
 import TodayDate from './TodayDate'
 import UpcomingMeets from './UpcomingMeets'
 
@@ -12,6 +13,14 @@ function App() {
       </div>
       <div className="flex flex-col items-center py-10">
         <AthleteList />
+        <div className="mt-10 w-full max-w-2xl">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Featured Athletes</h2>
+          <div className="grid grid-cols-3 gap-4">
+            <AthleteCard name="Marcus Rivera" time="16:15" />
+            <AthleteCard name="Jake Thompson" time="16:42" />
+            <AthleteCard name="Liam Johnson" time="17:12" />
+          </div>
+        </div>
         <UpcomingMeets />
       </div>
     </div>
