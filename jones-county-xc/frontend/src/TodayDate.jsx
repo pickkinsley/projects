@@ -6,7 +6,7 @@ function TodayDate() {
     day: 'numeric',
   })
 
-  return <p className="text-sm text-slate-400 mt-3">{today}</p>
+  return <p className="text-sm text-blue-400 mt-3">{today}</p>
 }
 
 export default TodayDate
