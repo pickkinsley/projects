@@ -1,5 +1,6 @@
 import AthleteList from './AthleteList'
 import AthleteCard from './AthleteCard'
+import RaceCategorySelect from './RaceCategorySelect'
 import TodayDate from './TodayDate'
 import UpcomingMeets from './UpcomingMeets'
 
@@ -12,6 +13,7 @@ function App() {
         <TodayDate />
       </div>
       <div className="flex flex-col items-center py-10">
+        <RaceCategorySelect />
         <AthleteList />
         <div className="mt-10 w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Featured Athletes</h2>
