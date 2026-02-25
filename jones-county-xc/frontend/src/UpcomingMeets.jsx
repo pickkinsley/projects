@@ -33,7 +33,7 @@ function UpcomingMeets() {
           <div key={meet.id} className={`${getMonthColor(meet.date)} rounded shadow px-5 py-4 flex justify-between items-center`}>
             <div>
               <h3 className="font-semibold text-gray-800">{meet.name}</h3>
-              <p className="text-sm text-gray-500 mt-1">📅 {meet.date} &middot; {meet.location}</p>
+              <p className="text-sm text-gray-500 mt-1"><span aria-hidden="true">📅 </span>{meet.date} &middot; {meet.location}</p>
             </div>
             <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-3 py-1 rounded-full whitespace-nowrap">
               {getDaysAway(meet.date)}

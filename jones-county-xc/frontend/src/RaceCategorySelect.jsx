@@ -11,9 +11,9 @@ const categories = ['5K', '3200m', '1600m', '800m']
 function RaceCategorySelect() {
   return (
     <div className="w-full max-w-xs">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Race Category</label>
+      <label id="race-category-label" className="block text-sm font-medium text-gray-700 mb-1">Race Category</label>
       <Select>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full" aria-labelledby="race-category-label">
           <SelectValue placeholder="Select a category" />
         </SelectTrigger>
         <SelectContent>

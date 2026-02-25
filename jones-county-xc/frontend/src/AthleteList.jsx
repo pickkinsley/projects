@@ -27,7 +27,7 @@ function AthleteList() {
           </thead>
           <tbody>
             {athletes.map((athlete, index) => (
-              <tr key={athlete.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} transition-colors hover:bg-purple-100 cursor-pointer`}>
+              <tr key={athlete.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} transition-colors hover:bg-purple-100`}>
                 <td className="px-5 py-3 font-bold text-gray-900">{athlete.name}</td>
                 <td className="px-5 py-3 text-gray-600">{athlete.grade}</td>
                 <td className="px-5 py-3">
