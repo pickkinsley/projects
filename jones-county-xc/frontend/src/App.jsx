@@ -2,6 +2,7 @@ import AthleteList from './AthleteList'
 import AthleteCard from './AthleteCard'
 import RaceCategorySelect from './RaceCategorySelect'
 import TodayDate from './TodayDate'
+import AddAthleteForm from './AddAthleteForm'
 import UpcomingMeets from './UpcomingMeets'
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
             <AthleteCard name="Liam Johnson" time="17:12" />
           </div>
         </div>
+        <AddAthleteForm />
         <UpcomingMeets />
       </main>
     </div>
