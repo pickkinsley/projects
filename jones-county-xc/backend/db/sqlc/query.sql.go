@@ -11,6 +11,21 @@ import (
 	"time"
 )
 
+const createAthlete = `-- name: CreateAthlete :execresult
+INSERT INTO athletes (name, grade, personal_record)
+VALUES (?, ?, ?)
+`
+
+type CreateAthleteParams struct {
+	Name           string
+	Grade          int32
+	PersonalRecord sql.NullString
+}
+
+func (q *Queries) CreateAthlete(ctx context.Context, arg CreateAthleteParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createAthlete, arg.Name, arg.Grade, arg.PersonalRecord)
+}
+
 const createResult = `-- name: CreateResult :execresult
 INSERT INTO results (athlete_id, meet_id, time, place)
 VALUES (?, ?, ?, ?)

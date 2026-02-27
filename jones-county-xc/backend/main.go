@@ -101,6 +101,43 @@ func main() {
 
 	// Athletes endpoint — using sqlc generated code
 	athletesHandler := corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		// Handle POST /api/athletes — create new athlete
+		if r.Method == "POST" {
+			var body struct {
+				Name           string `json:"name"`
+				Grade          int    `json:"grade"`
+				PersonalRecord string `json:"personalRecord"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			if body.Name == "" || body.Grade < 9 || body.Grade > 12 {
+				http.Error(w, "name is required and grade must be 9-12", http.StatusBadRequest)
+				return
+			}
+			pr := sql.NullString{String: body.PersonalRecord, Valid: body.PersonalRecord != ""}
+			result, err := queries.CreateAthlete(context.Background(), dbsqlc.CreateAthleteParams{
+				Name:           body.Name,
+				Grade:          int32(body.Grade),
+				PersonalRecord: pr,
+			})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			id, _ := result.LastInsertId()
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(Athlete{
+				ID:             int(id),
+				Name:           body.Name,
+				Grade:          body.Grade,
+				PersonalRecord: body.PersonalRecord,
+			})
+			return
+		}
+
 		// Handle /api/athletes/{id} pattern
 		if rest := strings.TrimPrefix(r.URL.Path, "/api/athletes/"); rest != r.URL.Path {
 			id, err := strconv.ParseInt(rest, 10, 32)

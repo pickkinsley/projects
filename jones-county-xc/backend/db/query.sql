@@ -18,6 +18,10 @@ FROM results
 WHERE meet_id = ?
 ORDER BY place;
 
+-- name: CreateAthlete :execresult
+INSERT INTO athletes (name, grade, personal_record)
+VALUES (?, ?, ?);
+
 -- name: CreateResult :execresult
 INSERT INTO results (athlete_id, meet_id, time, place)
 VALUES (?, ?, ?, ?);

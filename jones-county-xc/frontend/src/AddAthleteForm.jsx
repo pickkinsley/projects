@@ -1,14 +1,41 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 
 function AddAthleteForm() {
   const [errors, setErrors] = useState({})
+  const [success, setSuccess] = useState(false)
+  const formRef = useRef(null)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (athlete) => {
+      const res = await fetch('/api/athletes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(athlete),
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || 'Failed to add athlete')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['athletes'] })
+      formRef.current.reset()
+      setErrors({})
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    },
+  })
 
   function handleSubmit(e) {
     e.preventDefault()
+    setSuccess(false)
     const form = e.target
     const name = form.name.value.trim()
-    const grade = form.grade.value
+    const grade = parseInt(form.grade.value, 10)
     const pr = form.pr.value.trim()
 
     const newErrors = {}
@@ -17,12 +44,26 @@ function AddAthleteForm() {
     if (!pr) newErrors.pr = 'Personal record is required'
 
     setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) return
+
+    mutation.mutate({ name, grade, personalRecord: pr })
   }
 
   return (
     <div className="mt-10 w-full max-w-2xl">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Add Athlete</h2>
-      <form onSubmit={handleSubmit} noValidate className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 flex flex-col gap-5">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 flex flex-col gap-5">
+        {success && (
+          <p role="alert" className="text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+            Athlete added successfully!
+          </p>
+        )}
+        {mutation.isError && (
+          <p role="alert" className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            {mutation.error.message}
+          </p>
+        )}
+
         <div>
           <label htmlFor="athlete-name" className="block text-sm font-medium text-gray-700 mb-1">
             Name
@@ -79,8 +120,8 @@ function AddAthleteForm() {
           )}
         </div>
 
-        <Button type="submit" className="w-full">
-          Add Athlete
+        <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Adding...' : 'Add Athlete'}
         </Button>
       </form>
     </div>
