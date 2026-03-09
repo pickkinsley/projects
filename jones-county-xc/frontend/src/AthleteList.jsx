@@ -1,5 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
 
+function SkeletonRow({ even }) {
+  return (
+    <tr className={even ? 'bg-white' : 'bg-blue-50/50'}>
+      <td className="px-5 py-3">
+        <div className="h-4 w-32 rounded bg-gray-200 animate-pulse" />
+      </td>
+      <td className="px-5 py-3">
+        <div className="h-4 w-10 rounded bg-gray-200 animate-pulse" />
+      </td>
+      <td className="px-5 py-3">
+        <div className="h-4 w-16 rounded bg-gray-200 animate-pulse" />
+      </td>
+    </tr>
+  )
+}
+
 function AthleteList() {
   const { data: athletes, isLoading, error } = useQuery({
     queryKey: ['athletes'],
@@ -10,7 +26,6 @@ function AthleteList() {
     },
   })
 
-  if (isLoading) return <p className="text-gray-600">Loading athletes...</p>
   if (error) return <p className="text-red-600">Error: {error.message}</p>
 
   return (
@@ -26,15 +41,23 @@ function AthleteList() {
             </tr>
           </thead>
           <tbody>
-            {athletes.map((athlete, index) => (
-              <tr key={athlete.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} transition-colors hover:bg-purple-100`}>
-                <td className="px-5 py-3 font-bold text-gray-900">{athlete.name}</td>
-                <td className="px-5 py-3 text-gray-600">{athlete.grade}</td>
-                <td className="px-5 py-3">
-                  <span className="font-semibold text-blue-700">{athlete.personalRecord}</span>
-                </td>
-              </tr>
-            ))}
+            {isLoading
+              ? Array.from({ length: 5 }, (_, i) => (
+                  <SkeletonRow key={i} even={i % 2 === 0} />
+                ))
+              : athletes.map((athlete, index) => (
+                  <tr
+                    key={athlete.id}
+                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} transition-colors hover:bg-purple-100`}
+                    style={{ animation: 'fade-in 350ms ease-out' }}
+                  >
+                    <td className="px-5 py-3 font-bold text-gray-900">{athlete.name}</td>
+                    <td className="px-5 py-3 text-gray-600">{athlete.grade}</td>
+                    <td className="px-5 py-3">
+                      <span className="font-semibold text-blue-700">{athlete.personalRecord}</span>
+                    </td>
+                  </tr>
+                ))}
           </tbody>
         </table>
       </div>

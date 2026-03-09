@@ -21,8 +21,8 @@ function AddAthleteForm() {
       }
       return res.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['athletes'] })
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['athletes'] })
       formRef.current.reset()
       setErrors({})
       setSuccess(true)
