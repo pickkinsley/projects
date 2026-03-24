@@ -26,6 +26,15 @@ VALUES (?, ?, ?);
 INSERT INTO results (athlete_id, meet_id, time, place)
 VALUES (?, ?, ?, ?);
 
+-- name: UpdateAthlete :exec
+UPDATE athletes
+SET name = ?, grade = ?, personal_record = ?
+WHERE id = ?;
+
+-- name: DeleteAthlete :exec
+DELETE FROM athletes
+WHERE id = ?;
+
 -- name: ListFastestTimes :many
 SELECT a.name AS athlete_name, m.name AS meet_name, r.time, r.place
 FROM results r

@@ -145,6 +145,55 @@ func main() {
 				http.Error(w, "invalid athlete id", http.StatusBadRequest)
 				return
 			}
+
+			// Handle PUT /api/athletes/{id} — update athlete
+			if r.Method == "PUT" {
+				var body struct {
+					Name           string `json:"name"`
+					Grade          int    `json:"grade"`
+					PersonalRecord string `json:"personalRecord"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					http.Error(w, "invalid JSON", http.StatusBadRequest)
+					return
+				}
+				if body.Name == "" || body.Grade < 9 || body.Grade > 12 {
+					http.Error(w, "name is required and grade must be 9-12", http.StatusBadRequest)
+					return
+				}
+				pr := sql.NullString{String: body.PersonalRecord, Valid: body.PersonalRecord != ""}
+				err := queries.UpdateAthlete(context.Background(), dbsqlc.UpdateAthleteParams{
+					Name:           body.Name,
+					Grade:          int32(body.Grade),
+					PersonalRecord: pr,
+					ID:             int32(id),
+				})
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(Athlete{
+					ID:             int(id),
+					Name:           body.Name,
+					Grade:          body.Grade,
+					PersonalRecord: body.PersonalRecord,
+				})
+				return
+			}
+
+			// Handle DELETE /api/athletes/{id} — delete athlete
+			if r.Method == "DELETE" {
+				err := queries.DeleteAthlete(context.Background(), int32(id))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
+				return
+			}
+
 			row, err := queries.GetAthleteByID(context.Background(), int32(id))
 			if err == sql.ErrNoRows {
 				http.Error(w, "athlete not found", http.StatusNotFound)

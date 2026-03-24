@@ -47,6 +47,16 @@ func (q *Queries) CreateResult(ctx context.Context, arg CreateResultParams) (sql
 	)
 }
 
+const deleteAthlete = `-- name: DeleteAthlete :exec
+DELETE FROM athletes
+WHERE id = ?
+`
+
+func (q *Queries) DeleteAthlete(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteAthlete, id)
+	return err
+}
+
 const getAthleteByID = `-- name: GetAthleteByID :one
 SELECT id, name, grade, COALESCE(personal_record, '') AS personal_record, COALESCE(events, '') AS events
 FROM athletes
@@ -237,4 +247,27 @@ func (q *Queries) ListResultsByMeet(ctx context.Context, meetID int32) ([]Result
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAthlete = `-- name: UpdateAthlete :exec
+UPDATE athletes
+SET name = ?, grade = ?, personal_record = ?
+WHERE id = ?
+`
+
+type UpdateAthleteParams struct {
+	Name           string
+	Grade          int32
+	PersonalRecord sql.NullString
+	ID             int32
+}
+
+func (q *Queries) UpdateAthlete(ctx context.Context, arg UpdateAthleteParams) error {
+	_, err := q.db.ExecContext(ctx, updateAthlete,
+		arg.Name,
+		arg.Grade,
+		arg.PersonalRecord,
+		arg.ID,
+	)
+	return err
 }
